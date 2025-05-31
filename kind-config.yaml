@@ -7,13 +7,13 @@ containerdConfigPatches:
 nodes:
   - role: control-plane
     extraMounts:
-      - hostPath: ./mount/local
+      - hostPath: ./mount/local1
         containerPath: /data
   - role: worker
     extraMounts:
-      - hostPath: ./mount/local
+      - hostPath: ./mount/local2
         containerPath: /data
   - role: worker
     extraMounts:
-      - hostPath: ./mount/local
+      - hostPath: ./mount/local3
         containerPath: /data

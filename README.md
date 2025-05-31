@@ -6,10 +6,45 @@ This document provides step-by-step instructions to **install** and **uninstall*
 
 ## 🛠️ Prerequisites
 
-✅ Docker installed and running
-✅ `kind` CLI installed ([https://kind.sigs.k8s.io/docs/user/quick-start/#installation](https://kind.sigs.k8s.io/docs/user/quick-start/#installation))
-✅ `make` utility installed
+- ✅ Docker installed and running
+- ✅ `kind` CLI installed ([https://kind.sigs.k8s.io/docs/user/quick-start/#installation](https://kind.sigs.k8s.io/docs/user/quick-start/#installation))
+- ✅ `make` utility installed
+- ✅ `tilt` [cli installed](https://docs.tilt.dev/install.html) 
 
+
+---
+
+## ⚡ Quickstart
+
+1. **Clone the repository** (if you haven't already):
+
+    ```bash
+    git clone https://github.com/calebebrim/fireplacesftest.git
+    cd fireplacesftest
+    ```
+
+2. **Run**:
+
+    ```bash
+    make quickstart
+    tilt up
+    ```
+    After tilt up the resources are going to be stantiated ant it take a while. 
+
+3. **Verify the cluster is running**:
+
+    ```bash
+    kind get clusters
+    kubectl cluster-info --context kind-fireplace
+    ```
+
+4. **Stop everything**:
+    
+    Stop tilt with ``ctrl+c`` or tilt down in case you ran it detached. 
+
+    ```bash
+    make shutdown
+    ```
 ---
 
 ## 📁 Files
@@ -122,33 +157,5 @@ make help
 
 If you have any questions or want to extend this setup (e.g., auto-load images, install tools), let me know! 🚀
 
----
 
-## ⚡ Quickstart
-
-1. **Clone the repository** (if you haven't already):
-
-    ```bash
-    git clone <repo-url>
-    cd <repo-directory>
-    ```
-
-2. **Run**:
-
-    ```bash
-    make quickstart
-    ```
-
-3. **Verify the cluster is running**:
-
-    ```bash
-    kind get clusters
-    kubectl cluster-info --context fireplace
-    ```
-
-4. **Stop everything**:
-
-    ```bash
-    make shutdown
-    ```
 
