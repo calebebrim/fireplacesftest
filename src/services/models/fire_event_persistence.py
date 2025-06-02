@@ -1,1 +1,0 @@
-# fire event persistence model

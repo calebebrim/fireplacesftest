@@ -35,7 +35,14 @@ def install_minio():
 def install_redis(labels=[]):
     
     k8s_yaml('k8s/redis.yaml')
-    k8s_resource('redis', port_forwards=6379, labels=labels)
+    k8s_resource(
+        'redis', 
+        objects=["redis-config"],
+        port_forwards=6379, 
+        labels=labels,
+        trigger_mode=TRIGGER_MODE_MANUAL
+
+    )
 
 
 def install_superset():
@@ -125,6 +132,6 @@ def install_infra(labels):
     # needed to increase the upsert timeout for superset deployment 
     update_settings ( max_parallel_updates = 3 , k8s_upsert_timeout_secs = 300 , suppress_unused_image_warnings = None ) 
     # install_minio(labels) # << not working, we will use local mounting instead
-    install_postgres(labels)
+    # install_postgres(labels) # << decided to keep data in redis after considering querying speed. 
     install_kafka(labels)
     install_redis(labels)

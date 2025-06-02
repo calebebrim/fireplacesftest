@@ -24,18 +24,33 @@ def deploy_fireeventsource():
     
     k8s_resource('fire-event-source',
         labels=[BRONZE],
+        trigger_mode=TRIGGER_MODE_MANUAL
+
     )
 
     k8s_resource(new_name='fire-event-source-storage',
         objects=[ 'fireeventsource-storage', 'fireeventsource-storage-pvc'],
         labels=[BRONZE],
+        trigger_mode=TRIGGER_MODE_MANUAL
+
     )
-def deploy_dataquality():
+def deploy_data_quality():
 
     k8s_yaml('./k8s/silver-dataquality.yaml')
     
     k8s_resource('fire-event-data-quality',
         labels=[SILVER],
+        trigger_mode=TRIGGER_MODE_MANUAL
+
+    )
+
+def deploy_data_serving():
+
+    k8s_yaml('./k8s/gold-serving-layer.yaml')
+    
+    k8s_resource('fire-event-data-serving',
+        labels=[GOLD],
+        trigger_mode=TRIGGER_MODE_MANUAL
     )
 
 
@@ -45,8 +60,8 @@ def main():
     install_infra([INFRA])
     build_base_image()
     deploy_fireeventsource()
-    deploy_dataquality()
-
+    deploy_data_quality()
+    deploy_data_serving()
     
 
     # 4 - deploy the ingestion service (Bronze Layer)

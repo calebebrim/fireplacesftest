@@ -9,7 +9,7 @@ from src.services.utils.logger_utils import getLogger, hline
 from src.services.utils.csv_utils import from_csv_generator
 from src.services.utils.redis_utils import get_redis_client, redis, delete_keys
 from src.services.utils.kafka_utils import create_kafka_producer, create_producer_config, create_kafka_topic_if_not_exists, delete_kafka_topic
-from src.services.utils.dateutils import try_dateformats
+from src.services.utils.dateutils import try_strptime
 from confluent_kafka import Producer
 
 from typing import Optional
@@ -24,7 +24,7 @@ MAIN_LOOP_INTERVAL = int(os.environ.get("MAIN_LOOP_INTERVAL", 30))
 CSV_FOLDER_PATH = os.environ.get("CSV_FOLDER_PATH", "/data/fire_events")
 FIRE_EVENT_SOURCE_TOPIC = os.environ.get("FIRE_EVENT_SOURCE_TOPIC", "fire_event_source")
 SERVICE_NAME = os.environ.get("SERVICE_NAME", "fire_event_source")
-RESTART = bool(os.environ.get("RESTART", False))
+RESTART = os.environ.get("RESTART", "False").lower() == "true"
 REDIS_LAST_EVENT_TIMESTAMP_KEY = os.environ.get("REDIS_LATEST_EVENT_TIMESTAMP", f"{SERVICE_NAME}:latest_event_timestamp")
 
 logger = getLogger(__file__)
@@ -32,8 +32,34 @@ logger = getLogger(__file__)
 
 #
 
-if __name__ == "__main__":
+
+def redis_row_key(row: dict):
+    return f"{SERVICE_NAME}:message:{row['ID']}"
+
+
+def redis_file_key(file: str):
+    return f"{SERVICE_NAME}:file:{file}"
+
+
+def main():
+    global START_DATE
     logger.info("Starting fire event source...")
+
+    logger.info(
+        f"Starting fire event source with environment: "
+        f"\nSERVICE_NAME={SERVICE_NAME}, "
+        f"\nFIRE_EVENT_SOURCE_TOPIC={FIRE_EVENT_SOURCE_TOPIC}, "
+        f"\nON_FAILURE={ON_FAILURE}, "
+        f"\nDATE_FORMAT={DATE_FORMAT}, "
+        f"\nDATETIME_FORMAT={DATETIME_FORMAT}, "
+        f"\nBATCH_SIZE={BATCH_SIZE}, "
+        f"\nMAIN_LOOP={MAIN_LOOP}, "
+        f"\nMAIN_LOOP_INTERVAL={MAIN_LOOP_INTERVAL}, "
+        f"\nCSV_FOLDER_PATH={CSV_FOLDER_PATH}, "
+        f"\nSTART_DATE={START_DATE}, "
+        f"\nRESTART={RESTART}, "
+        # f"\nlatest_event_timestamp={latest_event_timestamp}"
+    )
     time.sleep(10)
 
     rcli: redis.Redis = get_redis_client()  # Initialize Redis client
@@ -48,7 +74,8 @@ if __name__ == "__main__":
                 logger.error(f"Message delivery failed: {err}")
             else:
                 logger.debug(f"Message {msg.key().decode('utf-8')} delivered to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}")
-                rkey = f"{SERVICE_NAME}:message:{msg.key().decode('utf-8')}"  # Use the key from the message
+                row = json.loads(msg.value())
+                rkey = redis_row_key(row)  # Use the key from the message
 
                 logger.debug(f"Setting control key in Redis: {rkey}")
                 rcli.set(rkey, json.dumps({"processed": True}))  # Store the message in Redis
@@ -59,13 +86,12 @@ if __name__ == "__main__":
                 if rcli.exists(REDIS_LAST_EVENT_TIMESTAMP_KEY):
                     latest_event_timestamp_str = str(rcli.get(REDIS_LAST_EVENT_TIMESTAMP_KEY))
                     logger.debug(f"Latest event timestamp from Redis: {latest_event_timestamp_str}")
-                    latest_event_timestamp = try_dateformats(
+                    latest_event_timestamp = try_strptime(
                         latest_event_timestamp_str, [DATETIME_FORMAT, DATE_FORMAT]
                     )
-                row = json.loads(msg.value())
 
                 incident_date_str = row.get("Incident Date", "")
-                incident_date = try_dateformats(
+                incident_date = try_strptime(
                     incident_date_str, [DATETIME_FORMAT, DATE_FORMAT]
                 )
                 if incident_date is None:
@@ -101,18 +127,25 @@ if __name__ == "__main__":
         rcli.delete(REDIS_LAST_EVENT_TIMESTAMP_KEY)
         # Query: find all keys matching a pattern (e.g., "user:*")
         all_messages_keys = f"{SERVICE_NAME}:message:*"
-
+        all_files_keys = f"{SERVICE_NAME}:file:*"
         # Delete all found keys
         logger.info(f"Deleting all keys matching pattern: {all_messages_keys}")
         delete_keys(all_messages_keys)
-        delete_kafka_topic(producer_config, FIRE_EVENT_SOURCE_TOPIC)
+        logger.info(f"Deleting all keys matching pattern: {all_files_keys}")
+        delete_keys(all_files_keys)
 
+        delete_kafka_topic(producer_config, FIRE_EVENT_SOURCE_TOPIC)
+        hline()
+        logger.warning("<RESTARTED>")
+        hline()
+        return
     create_kafka_topic_if_not_exists(
         config=producer_config, 
         topic_name=FIRE_EVENT_SOURCE_TOPIC,
         num_partitions=30,
         replication_factor=1
     )
+
     while True:
         # Example usage
 
@@ -129,25 +162,10 @@ if __name__ == "__main__":
             logger.info(
                 f"Retrieving latest event timestamp from Redis: {rcli.get(REDIS_LAST_EVENT_TIMESTAMP_KEY)}"
             )
-            latest_event_timestamp = try_dateformats(
+            latest_event_timestamp = try_strptime(
                 str(rcli.get(REDIS_LAST_EVENT_TIMESTAMP_KEY)),
                 [DATETIME_FORMAT, DATE_FORMAT],
             )
-
-        logger.info(
-            f"Starting fire event source with environment: "
-            f"SERVICE_NAME={SERVICE_NAME}, "
-            f"FIRE_EVENT_SOURCE_TOPIC={FIRE_EVENT_SOURCE_TOPIC}, "
-            f"ON_FAILURE={ON_FAILURE}, "
-            f"DATE_FORMAT={DATE_FORMAT}, "
-            f"DATETIME_FORMAT={DATETIME_FORMAT}, "
-            f"BATCH_SIZE={BATCH_SIZE}, "
-            f"MAIN_LOOP={MAIN_LOOP}, "
-            f"MAIN_LOOP_INTERVAL={MAIN_LOOP_INTERVAL}, "
-            f"CSV_FOLDER_PATH={CSV_FOLDER_PATH}, "
-            f"START_DATE={START_DATE}, "
-            f"latest_event_timestamp={latest_event_timestamp}"
-        )
 
         # Ensure START_DATE is not earlier than the latest event timestamp
         if latest_event_timestamp:
@@ -156,13 +174,42 @@ if __name__ == "__main__":
         batch = BATCH_SIZE
         processed_rows = 0
         read_rows = 0
+        rkey = None
+        latest_key_produced = None
         for file in files:
             logger.info(f"Processing file: {file}")
             csv_file_path = os.path.join(CSV_FOLDER_PATH, file)  # Get the first file in the directory
+
+            # ================= checking file redis key
+            rfilek = redis_file_key(csv_file_path)
+            if not rcli.exists(rfilek):
+                rcli.set(rfilek, json.dumps({"latest_row": 0, "completed": False}))
+            file_status: dict = json.loads(str(rcli.get(rfilek)))
+            if file_status.get("completed", False):
+                logger.debug(f"file completed: {csv_file_path}: {file_status} ")
+                continue
+            # ================= checking file redis key
             for row in from_csv_generator(csv_file_path):
+                if int(file_status.get("latest_row", 0)) > int(row.get("ID", 0)):
+                    logger.debug(
+                        f"skipping already processed row id: {row.get("ID", 0)}"
+                    )
+                    continue
+                if "_end_" in row.keys():
+                    # all rows readed, marking it as completed.
+                    _s = json.loads(str(rcli.get(rfilek)))
+                    _s["completed"] = True
+                    rcli.set(rfilek, json.dumps(_s))
+                    break
                 try:
-                    incident_date_str = row["Incident Date"]
-                    incident_date = datetime.strptime(incident_date_str, DATE_FORMAT)
+                    incident_date_str = str(row["Incident Date"])
+                    if incident_date_str:
+                        incident_date = datetime.strptime(
+                            incident_date_str, DATE_FORMAT
+                        )
+                    else:
+                        # incident need to have a Date
+                        continue
                     if (read_rows % 100000) == 0:
                         hline()
                         logger.info(f"Read {read_rows} rows so far.")
@@ -174,7 +221,12 @@ if __name__ == "__main__":
 
                     if incident_date >= START_DATE:
 
-                        key = str(row.get("ID")) # row[ID] is unique
+                        rkey = redis_row_key(
+                            row
+                        )  # to make sure all rows are processed.
+                        key = str(
+                            row.get("Incident Number")
+                        )  # ensure all Incident Number are producer in the same topic partition ensuring sequenciality.
                         value = None
                         try:
                             value = json.dumps(row)
@@ -184,7 +236,6 @@ if __name__ == "__main__":
                                 continue
                             elif ON_FAILURE == "raise":
                                 raise err
-                        rkey = f"{SERVICE_NAME}:message:{key}"  
                         logger.debug(f"Checking Redis for control key: {rkey}")
                         if rcli.exists(rkey):
                             control_data = str(
@@ -199,7 +250,7 @@ if __name__ == "__main__":
                         )
                         kprod.produce(
                             FIRE_EVENT_SOURCE_TOPIC,
-                            key=key,
+                            key=key,  #
                             value=value,
                             callback=control_delivery_report,
                         )
@@ -225,17 +276,27 @@ if __name__ == "__main__":
                         raise err
                     kprod.flush(1)
 
-        hline()
-        logger.info(f"Read {read_rows} rows from {len(files)} files.")
-        logger.info(f"Total rows processed: {processed_rows}")
-        logger.info(f"Latest event timestamp: {rcli.get(REDIS_LAST_EVENT_TIMESTAMP_KEY) if rcli.exists(REDIS_LAST_EVENT_TIMESTAMP_KEY) else 'N/A'}")
-        if processed_rows > 0:
-            logger.info(f"Latest key produced: {latest_key_produced}")
-        else:
-            logger.info("No rows processed in this iteration.")
-        hline()
-        logger.info(f"Waiting for {MAIN_LOOP_INTERVAL} seconds before the next iteration.")
+            hline()
+            file_status["latest_row"] = row.get("ID")
+            logger.info(f"Read {read_rows} rows from {len(files)} files.")
+            logger.info(f"Total rows processed: {processed_rows}")
+            logger.info(
+                f"Latest event timestamp: {rcli.get(REDIS_LAST_EVENT_TIMESTAMP_KEY) if rcli.exists(REDIS_LAST_EVENT_TIMESTAMP_KEY) else 'N/A'}"
+            )
+            logger.info(f"Latest redis key set: {rkey if rkey else 'N/A'}")
+            logger.info(
+                f"Latest key produced: {latest_key_produced if latest_key_produced else 'N/A'}"
+            )
+
+            hline()
+            logger.info(
+                f"Waiting for {MAIN_LOOP_INTERVAL} seconds before the next iteration."
+            )
 
         if not MAIN_LOOP:
             break
         time.sleep(MAIN_LOOP_INTERVAL)
+
+
+if __name__ == "__main__":
+    main()

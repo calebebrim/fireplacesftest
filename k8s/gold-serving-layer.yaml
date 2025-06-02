@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: fire-event-data-quality
+  name: fire-event-data-serving
   labels:
-    app: fire-event-data-quality
+    app: fire-event-data-serving
 spec:
-  serviceName: "fire-event-data-quality"
+  serviceName: "fire-event-data-serving"
   replicas: 1
   selector:
     matchLabels:
-      app: fire-event-data-quality
+      app: fire-event-data-serving
   template:
     metadata:
       labels:
-        app: fire-event-data-quality
+        app: fire-event-data-serving
     spec:
       resources:
         requests:
@@ -32,9 +32,9 @@ spec:
                     values:
                       - fireplace-worker2
       containers:
-      - name: fire-event-data-quality
+      - name: fire-event-data-serving
         image: base:latest
-        command: ["/bin/sh", "-c", "python -m src.services.fire_event_data_quality"]
+        command: ["/bin/sh", "-c", "python -m src.services.fire_event_data_serving"]
         env:
        
         - name: KAFKA_BOOTSTRAP_SERVERS
@@ -49,6 +49,8 @@ spec:
           value: ""
         - name: ON_FAILURE
           value: "raise"
+        - name: ON_DUPLICATE
+          value: "version" # version,replace,continue,fail
         - name: DATE_FORMAT
           value: "%Y/%m/%d"
         - name: DATETIME_FORMAT
@@ -58,15 +60,15 @@ spec:
         - name: MAIN_LOOP
           value: "True"  
         - name: MAIN_LOOP_INTERVAL
-          value: "5"
+          value: "10"
         - name: RESTART
           value: "False"
         - name: LOG_LEVEL
-          value: "DEBUG"
+          value: "INFO"
+        - name: LOG_LEVEL_MAPPINGS
+          value: "fire_event_data_serving:DEBUG,logger_utils:DEBUG"
         - name: EVENTS_SOURCE_TOPIC
           value: "fire_event_source"
-        - name: ADITIONAL_ALLOWED_EMPTY_FIELDS
-          value: "City,First_Unit_On_Scene,Estimated_Property_Loss,Estimated_Contents_Loss,Action_Taken_Secondary,Action_Taken_Other,Detector_Alerted_Occupants,Area_of_Fire_Origin,Ignition_Cause,Ignition_Factor_Primary,Ignition_Factor_Secondary,Heat_Source,Item_First_Ignited,Human_Factors_Associated_with_Ignition,Structure_Type,Structure_Status,Floor_of_Fire_Origin,Fire_Spread,Number_of_floors_with_minimum_damage,Number_of_floors_with_significant_damage,Number_of_floors_with_heavy_damage,Number_of_floors_with_extreme_damage,Detectors_Present,Detector_Type,Detector_Operation,Detector_Effectiveness,Detector_Failure_Reason,Automatic_Extinguishing_System_Present,Automatic_Extinguishing_System_Type,Automatic_Extinguishing_System_Perfomance,Automatic_Extinguishing_System_Failure_Reason,Number_of_Sprinkler_Heads_Operating,No_Flame_Spread"
         
      
       restartPolicy: Always

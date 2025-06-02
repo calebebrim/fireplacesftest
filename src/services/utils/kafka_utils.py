@@ -228,7 +228,7 @@ def kafka_consumer_generator(consumer: Consumer, checkInterruption: Callable = l
     """
     while True:
         if checkInterruption and checkInterruption():
-            logger.info("Interruption detected, stopping consumer.")
+            logger.debug("Interruption detected, stopping consumer.")
             break
         try:
             msg = consumer.poll(timeout=1.0)
@@ -302,7 +302,7 @@ def reset_consumer_group_to_earliest(group_id: str, topic: str):
 
     partitions = metadata.topics[topic].partitions.keys()
     topic_partitions = [TopicPartition(topic, p) for p in partitions]
-    
+
     # Fetch the earliest offsets for each partition
     earliest_offsets = {}
     for tp in topic_partitions:
@@ -311,7 +311,7 @@ def reset_consumer_group_to_earliest(group_id: str, topic: str):
 
     consumer_group_partitions = ConsumerGroupTopicPartitions(group_id=group_id, topic_partitions=topic_partitions)
     consumer.close()
-  
+
     # Alter the consumer group offsets
     futures = admin_client.alter_consumer_group_offsets([consumer_group_partitions])
     # Wait for each operation to finish
@@ -323,3 +323,47 @@ def reset_consumer_group_to_earliest(group_id: str, topic: str):
             logger.error(f"Failed to reset offset for {tp}: {e}")
 
     logger.info(f"Consumer group '{group_id}' has been reset to the earliest offsets for topic '{topic}'.")
+
+
+def get_consumer_group_lag(group_id: str, topic: str) -> dict:
+    """
+    Calculate the lag for a consumer group on a specific topic.
+
+    :param bootstrap_servers: Comma-separated list of Kafka broker addresses.
+    :param group_id: The consumer group ID.
+    :param topic: The topic to check lag for.
+    :return: Dictionary {partition: lag}.
+    """
+    admin = AdminClient(create_admin_config())
+
+    # Fetch topic metadata to get all partitions
+    topic_metadata = admin.list_topics(topic=topic, timeout=10)
+    partitions = list(topic_metadata.topics[topic].partitions.keys())
+
+    # Prepare TopicPartition list for each partition
+    topic_partitions = [TopicPartition(topic, p) for p in partitions]
+
+    consumer_group_topic_partitions = ConsumerGroupTopicPartitions(
+        group_id, topic_partitions
+    )
+
+    # Fetch committed offsets for the consumer group
+    committed = admin.list_consumer_group_offsets([consumer_group_topic_partitions])
+
+    # Create a temporary consumer to fetch end offsets (latest)
+    from confluent_kafka import Consumer
+
+    consumer = Consumer(create_consumer_config(consumer_group=group_id))
+
+    lag = {}
+    for tp in topic_partitions:
+        committed_offset = committed.get(tp, None)
+        committed_offset = (
+            committed_offset.offset if committed_offset is not None else 0
+        )
+
+        low, high = consumer.get_watermark_offsets(tp, timeout=5)
+        lag[tp.partition] = max(high - committed_offset, 0)
+
+    consumer.close()
+    return lag

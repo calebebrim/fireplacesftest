@@ -7,6 +7,4 @@ def from_csv_generator(file_path):
         reader = csv.DictReader(csvfile)
         for row in reader:
             yield row
-
-
-
+    yield {"_end_": True}
