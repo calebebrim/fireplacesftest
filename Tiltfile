@@ -1,22 +1,51 @@
 # Tiltfile for deploying the Fire Incidents project infrastructure
-load('Tiltfile.infra', 'install_infra')
+load('infra.Tiltfile', 'install_infra')
 
-def deploy_ingress():
+INFRA   = '0-infra'
+BRONZE  = '1-bronze'
+SILVER  = '2-silver'
+GOLD    = '3-gold'
 
-    docker_build(
-        'fire-incidents-ingress',
-        context='./docker',
-        dockerfile='./docker/ingress.dockerfile',
+def build_base_image():
+        docker_build(
+        'base',
+        context='.',
+        ignore=['mount'],
+        dockerfile='./docker/base.dockerfile',
         live_update=[
-            sync('./ingress', '/app/ingress'),
-            run('pip install -e .'),
+            # sync('./src', '/app/src'),
+            # run('pip install --no-cache-dir -r /app/requirements.txt'),
         ],
     )
+
+def deploy_fireeventsource():
+
+    k8s_yaml('./k8s/bronze-fireeventsource.yaml')
+    
+    k8s_resource('fire-event-source',
+        labels=[BRONZE],
+    )
+
+    k8s_resource(new_name='fire-event-source-storage',
+        objects=[ 'fireeventsource-storage', 'fireeventsource-storage-pvc'],
+        labels=[BRONZE],
+    )
+def deploy_dataquality():
+
+    k8s_yaml('./k8s/silver-dataquality.yaml')
+    
+    k8s_resource('fire-event-data-quality',
+        labels=[SILVER],
+    )
+
 
 
 def main():
     # needed to increase the upsert timeout for superset deployment 
-    install_infra()
+    install_infra([INFRA])
+    build_base_image()
+    deploy_fireeventsource()
+    deploy_dataquality()
 
     
 

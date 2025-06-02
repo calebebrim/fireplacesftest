@@ -3,25 +3,25 @@ load('ext://helm_resource', 'helm_resource', 'helm_repo')
 
 
 
-def install_postgres():
+def install_postgres(labels=[]):
     k8s_yaml('k8s/postgres.yaml')
-    k8s_resource('postgres', port_forwards=5432, labels=['infrastructure'])
+    k8s_resource('postgres', port_forwards=5432, labels=labels)
 
 
-def install_kafka():
-    helm_repo('helm-strimzi-charts', 'https://strimzi.io/charts/', labels=['infrastructure'])
-    helm_resource('kafka-operator', "strimzi/strimzi-kafka-operator", labels=['infrastructure'])
+def install_kafka(labels=[]):
+    helm_repo('helm-strimzi-charts', 'https://strimzi.io/charts/', labels=labels)
+    helm_resource('kafka-operator', "strimzi/strimzi-kafka-operator", labels=labels)
     k8s_yaml('k8s/kafka.yaml')
     k8s_yaml('k8s/kafkastorageclass.yaml')
     k8s_resource(
         new_name='fireplace-kafka-storage',
-        objects=['kafka-storage:persistentvolume'], labels=['infrastructure']
+        objects=['kafka-storage:persistentvolume'], labels=labels
     )
     k8s_resource(
         new_name='fireplace-kafka',
-        objects=['fireplace-kafka:kafka', 'dual-role:kafkanodepool'], labels=['infrastructure']
+        objects=['fireplace-kafka:kafka', 'dual-role:kafkanodepool'], labels=labels
     )
-    k8s_resource('kafka-operator', labels=['infrastructure'])
+    k8s_resource('kafka-operator', labels=labels)
 
 # tryed to use minio to simulate S3 storage, but it is not working
 def install_minio():
@@ -32,9 +32,10 @@ def install_minio():
         port_forwards=[9001, 9000], labels=['infrastructure']
     )
 
-def install_redis():
+def install_redis(labels=[]):
+    
     k8s_yaml('k8s/redis.yaml')
-    k8s_resource('redis', port_forwards=6379, labels=['infrastructure'])
+    k8s_resource('redis', port_forwards=6379, labels=labels)
 
 
 def install_superset():
@@ -94,7 +95,10 @@ def helm_install(values_file, name, chart=None, repo_url=None, labels=[], namesp
 
 # Example usage:
 
-def install_superset_helm():
+def install_superset_helm(labels=[]):
+    """
+    Install Apache Superset using Helm.
+    """
     # helm_repo('superset-repo', 'https://apache.github.io/superset', labels=['infrastructure'])
     docker_build(
         'apache/superset',
@@ -114,13 +118,13 @@ def install_superset_helm():
         chart="superset/superset", 
         repo_url='https://apache.github.io/superset', 
         on_exist='replace',
-        labels=['infrastructure'],
+        labels=labels,
     )
 
-def install_infra():
+def install_infra(labels):
     # needed to increase the upsert timeout for superset deployment 
     update_settings ( max_parallel_updates = 3 , k8s_upsert_timeout_secs = 300 , suppress_unused_image_warnings = None ) 
-    # install_minio() # << not working, we will use local mounting instead
-    install_postgres()
-    install_kafka()
-    install_redis()
+    # install_minio(labels) # << not working, we will use local mounting instead
+    install_postgres(labels)
+    install_kafka(labels)
+    install_redis(labels)

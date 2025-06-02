@@ -47,3 +47,6 @@ quickstart: imagerepository
 shutdown: 
 	-make uninstall CLUSTER_NAME=fireplace KIND_CONFIG=kind-config.yaml
 	-make stoprepo
+
+build_base:
+	docker build --pull --rm -f 'docker/base.dockerfile' -t 'base:latest' '.' 
