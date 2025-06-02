@@ -160,8 +160,8 @@ if __name__ == "__main__":
             logger.info(f"Processing file: {file}")
             csv_file_path = os.path.join(CSV_FOLDER_PATH, file)  # Get the first file in the directory
             for row in from_csv_generator(csv_file_path):
-                incident_date_str = row["Incident Date"]
                 try:
+                    incident_date_str = row["Incident Date"]
                     incident_date = datetime.strptime(incident_date_str, DATE_FORMAT)
                     if (read_rows % 100000) == 0:
                         hline()
@@ -203,21 +203,22 @@ if __name__ == "__main__":
                             value=value,
                             callback=control_delivery_report,
                         )
-                        # will only set the latest_key_produced if reach this point. 
+                        # will only set the latest_key_produced if reach this point.
                         latest_key_produced = key
 
                         if processed_rows >= batch:
                             logger.info(f"Flushing producer after processing {processed_rows} rows...")
-                            
+
                             kprod.flush(1)
                             logger.info(f"Flushing completed.")
-                            
+
                             break
                         processed_rows += 1
 
                     read_rows += 1
                 except ValueError as err:
                     logger.error(f"Invalid incident {key} error: {str(err)}.")
+                    logger.debug(row)
                     if ON_FAILURE == "continue":
                         continue
                     elif ON_FAILURE == "raise":

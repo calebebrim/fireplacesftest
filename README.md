@@ -22,7 +22,10 @@ This document provides step-by-step instructions to **install** and **uninstall*
     git clone https://github.com/calebebrim/fireplacesftest.git
     cd fireplacesftest
     ```
+    After repository cloned download and add the file under mount/worker/firedata
 
+    To get Fire_Incidents_20250530.csv file download manually from https://data.sfgov.org/Public-Safety/Fire-Incidents/wr8u-xric/about_data
+    
 2. **Run**:
 
     ```bash
