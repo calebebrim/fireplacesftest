@@ -64,7 +64,9 @@ def getLogger(file: str) -> logging.Logger:
     return logger
 
 
-def hline(ln=80, char: str = "-", header="", as_debug=False) -> None:
+def hline(
+    ln=80, char: str = "-", header="", as_debug=False, as_error=False, as_warning=False
+) -> None:
     """
     Print a horizontal line to the console.
     """
@@ -75,7 +77,13 @@ def hline(ln=80, char: str = "-", header="", as_debug=False) -> None:
         return char * (int(ln / 2) - int(len(_h) / 2))
 
     logger = get_general_logger()
+    content = half_line() + _h + half_line()
+
     if as_debug:
-        logger.debug(half_line() + _h + half_line())
+        logger.debug(content)
+    elif as_error:
+        logger.error(content)
+    elif as_warning:
+        logger.warning(content)
     else:
-        logger.info(half_line() + _h + half_line())
+        logger.info(content)
