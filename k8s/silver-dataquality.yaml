@@ -6,7 +6,7 @@ metadata:
     app: fire-event-data-quality
 spec:
   serviceName: "fire-event-data-quality"
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: fire-event-data-quality
@@ -54,7 +54,7 @@ spec:
         - name: DATETIME_FORMAT
           value: "%Y/%m/%d %H:%M:%S|%Y/%m/%d %I:%M:%S %p"
         - name: BATCH_SIZE
-          value: "10"
+          value: "1000"
         - name: MAIN_LOOP
           value: "True"  
         - name: MAIN_LOOP_INTERVAL
