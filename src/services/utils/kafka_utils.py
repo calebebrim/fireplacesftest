@@ -228,8 +228,9 @@ def kafka_consumer_generator(consumer: Consumer, checkInterruption: Callable = l
     """
     while True:
         if checkInterruption and checkInterruption():
-            logger.debug("Interruption detected, stopping consumer.")
-            break
+            logger.debug("Kafka consumer interruption detected, stopping consumer.")
+            return
+
         try:
             msg = consumer.poll(timeout=1.0)
             if msg is None:
