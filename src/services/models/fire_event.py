@@ -300,4 +300,4 @@ def fire_event_to_key(event: FireEvent, prefix: str = "fire_event:") -> str:
     if not event.Incident_Number:
         raise ValueError("Incident_Number not set")
 
-    return f"{prefix}{":" if prefix else ""}:{event.Incident_Number}"
+    return f"{prefix}{":" if prefix else ""}{event.Incident_Number}"

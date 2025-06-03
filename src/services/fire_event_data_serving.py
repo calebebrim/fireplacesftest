@@ -24,9 +24,10 @@ from src.services.utils.redis_utils import (
 
 logger = getLogger(__file__)
 
-SERVICE_NAME = os.environ.get("SERVICE_NAME", "fire_event_data_serving.py")
-REDIS_EVENT_KEY_PREFIX = f"{SERVICE_NAME}:fireevent"
-REDIS_EVENT_INDEX_ID = f"{os.environ.get("REDIS_EVENT_INDEX_ID","fireevents")}_idx"
+SERVICE_NAME = os.environ.get("SERVICE_NAME", "fire_event_data_serving")
+
+REDIS_EVENT_KEY_PREFIX = f"fireevent"
+REDIS_EVENT_INDEX_ID = f"{os.environ.get("REDIS_EVENT_INDEX_ID","fireevent")}_idx"
 
 ON_FAILURE = os.environ.get("ON_FAILURE", "continue")
 ON_DUPLICATE = os.environ.get("ON_DUPLICATE", "continue").lower()
@@ -52,12 +53,13 @@ def create_indexes():
     """
     schema = [
         TagField("Incident_Number"),  # Grouping/filtering by incident number
-        NumericField("ID", sortable=True),  # Row ID as numeric, sortable
-        TextField("Alarm_DtTm", sortable=True),  # ISO date-time string, sortable
         TagField("neighborhood_district"),  # District as tag field
         TagField("Battalion"),  # Battalion as tag field
+        NumericField("ID", sortable=True),  # Row ID as numeric, sortable
+        NumericField("Alarm_DtTm", sortable=True),  # ISO date-time string, sortable
+        NumericField("Incident_Date", sortable=True),  # ISO date-time string, sortable
     ]
-    create_index(REDIS_EVENT_INDEX_ID, schema, prefixes=[f"{REDIS_EVENT_KEY_PREFIX}:"])
+    create_index(REDIS_EVENT_INDEX_ID, schema, prefixes=[f"{REDIS_EVENT_KEY_PREFIX}"])
 
 
 def recreate_indexes():
@@ -81,7 +83,7 @@ def store_fire_event(event: FireEvent) -> None:
             return None
         elif ON_DUPLICATE in ["replace", "version"]:
             if ON_DUPLICATE == "replace":
-                _k = f"{r_event_key}:{0}"
+                _k = f"{r_event_key}:0"
                 logger.debug(f"Overriding event {_k}")
             elif ON_DUPLICATE == "version":
                 latest_revision = get_latest_revision(r_event_key)
@@ -92,7 +94,7 @@ def store_fire_event(event: FireEvent) -> None:
         else:
             return logger.warning(f"Impossible to parse {ON_DUPLICATE} to ON_DUPLICATE.")
     else:
-        _k = f"{r_event_key}:{0}"
+        _k = f"{r_event_key}:0"
         logger.debug(f"persisting: {_k}")
         return store_as_hash(_k, asdict(event))
 
@@ -105,7 +107,7 @@ def main():
         logger.info("RESTARTED")
         hline()
         return 
-
+    create_indexes()
     kc = create_kafka_consumer(create_consumer_config(consumer_group=VALIDATED_EVENTS_TOPIC_CG), [VALIDATED_EVENTS_TOPIC])
     logger.info(f"{SERVICE_NAME} is started.")
     while True:
@@ -136,9 +138,9 @@ def main():
                 data = json.loads(data_str)
                 event: FireEvent = parse_fire_event(data)
                 latest_incident_time = event.Incident_Date
-                
+
                 store_fire_event(event)
-                
+
                 latest_successful_event = key_str
                 sucessful_messages +=1
                 latest_sucessful_incident_time = event.Incident_Date
@@ -155,7 +157,6 @@ def main():
         logger.info(f"Latest incident time: {latest_incident_time}")
         logger.info(f"Latest sucessfull incident time: {latest_sucessful_incident_time}")
         hline(char="*")
-        
 
         if not MAIN_LOOP: 
             break

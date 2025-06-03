@@ -96,7 +96,7 @@ def store_as_hash(key: str, data: dict):
     # Serialize datetime fields to ISO format
     for k, v in data.items():
         if isinstance(v, datetime):
-            data[k] = v.isoformat()
+            data[k] = v.timestamp()
         elif v is None:
             data[k] = ""  # Store empty string for None values
         else:

@@ -38,7 +38,7 @@ def install_redis(labels=[]):
     k8s_resource(
         'redis', 
         objects=["redis-config"],
-        port_forwards=6379, 
+        port_forwards=[6379, 8001], 
         labels=labels,
         trigger_mode=TRIGGER_MODE_MANUAL
 

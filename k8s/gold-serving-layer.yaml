@@ -61,12 +61,12 @@ spec:
           value: "True"  
         - name: MAIN_LOOP_INTERVAL
           value: "10"
-        - name: RESTART
-          value: "False"
+        # - name: RESTART
+        #   value: "True"
         - name: LOG_LEVEL
           value: "INFO"
         - name: LOG_LEVEL_MAPPINGS
-          value: "fire_event_data_serving:DEBUG,logger_utils:DEBUG"
+          value: "fire_event_data_serving:DEBUG,redis_utils:DEBUG"
         - name: EVENTS_SOURCE_TOPIC
           value: "fire_event_source"
         
