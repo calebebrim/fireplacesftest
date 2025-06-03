@@ -30,6 +30,8 @@ help:
 	@echo "  make install [CLUSTER_NAME=<name>] [KIND_CONFIG=<path>]  - Create a KinD cluster"
 	@echo "  make uninstall [CLUSTER_NAME=<name>]                     - Delete the KinD cluster"
 	@echo "  make help                                                - Show this help"
+	@echo "  make quickstart                                         - Start registry and KinD cluster 'fireplace'"
+	@echo "  make shutdown                                           - Delete 'fireplace' cluster and stop registry"
 
 imagerepository:
 	@echo "KinD cluster management Makefile"
