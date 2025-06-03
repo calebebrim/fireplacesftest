@@ -61,6 +61,8 @@ spec:
           value: "True"  
         - name: MAIN_LOOP_INTERVAL
           value: "1"
+        - name: MAIN_LOOP_TIMEOUT
+          value: "500"
         # - name: RESTART
         #   value: "True"
         - name: LOG_LEVEL

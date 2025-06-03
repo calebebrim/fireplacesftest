@@ -6,7 +6,7 @@ metadata:
     app: fire-event-data-quality
 spec:
   serviceName: "fire-event-data-quality"
-  replicas: 3
+  replicas: 5
   selector:
     matchLabels:
       app: fire-event-data-quality
@@ -48,7 +48,7 @@ spec:
         - name: REDIS_PASSWORD
           value: ""
         - name: ON_FAILURE
-          value: "raise"
+          value: "continue"
         - name: DATE_FORMAT
           value: "%Y/%m/%d"
         - name: DATETIME_FORMAT
@@ -62,7 +62,7 @@ spec:
         - name: RESTART
           value: "False"
         - name: LOG_LEVEL
-          value: "DEBUG"
+          value: "INFO"
         - name: EVENTS_SOURCE_TOPIC
           value: "fire_event_source"
         - name: ADITIONAL_ALLOWED_EMPTY_FIELDS
