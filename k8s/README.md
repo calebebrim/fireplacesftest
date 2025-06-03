@@ -45,6 +45,21 @@ The behavior and performance of the pipeline are controlled by several environme
 | `CSV_FOLDER_PATH`       | `/data/fire_events`    | Path to the folder containing fire event CSV files.                                          |
 | `SERVICE_NAME`          | (varies)               | Name of the service, used for Redis keys and logging.                                       |
 | `ON_FAILURE`            | `continue`             | Controls error handling: `continue` or `raise`.                                             |
+| `ON_DUPLICATE`          | `continue`             | Controls how duplicate events are handled in Redis. See below for options.                  |
+
+#### `ON_DUPLICATE` Options
+
+This variable determines how the service handles duplicate fire event records when storing them in Redis:
+
+- `version`: Create a new version of the event (incrementing a version number in the key).
+- `replace`: Overwrite the existing event with the new data.
+- `continue`: Skip the new event and keep the existing one (default).
+- `fail`: Raise an error and stop processing if a duplicate is detected.
+
+**Example:**  
+If `ON_DUPLICATE=version`, each update to an event creates a new versioned key in Redis, preserving history.  
+If `ON_DUPLICATE=replace`, the latest event data always overwrites the previous one.
+
 
 **Performance Tuning:**  
 - Lowering `MAIN_LOOP_INTERVAL` and increasing `BATCH_SIZE` will make the pipeline process data faster, but may increase resource usage.
