@@ -9,7 +9,12 @@ from dataclasses import asdict
 
 from src.services.utils.logger_utils import getLogger, hline
 from src.services.models.fire_event import FireEvent, parse_fire_event, fire_event_to_key
-from src.services.utils.kafka_utils import create_kafka_consumer, create_consumer_config, kafka_consumer_generator
+from src.services.utils.kafka_utils import (
+    create_kafka_consumer,
+    create_consumer_config,
+    kafka_consumer_generator,
+    reset_consumer_group_to_earliest,
+)
 from src.services.utils.redis_utils import (
     get_redis_client,
     TagField,
@@ -103,6 +108,10 @@ def main():
     if RESTART:
         recreate_indexes()
         delete_keys(REDIS_EVENT_KEY_PREFIX)
+        reset_consumer_group_to_earliest(
+            topic=VALIDATED_EVENTS_TOPIC, group_id=VALIDATED_EVENTS_TOPIC_CG
+        )
+
         hline()
         logger.info("RESTARTED")
         hline()
