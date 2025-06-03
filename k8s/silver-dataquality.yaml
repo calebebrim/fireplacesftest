@@ -59,14 +59,14 @@ spec:
           value: "True"  
         - name: MAIN_LOOP_INTERVAL
           value: "5"
-        - name: RESTART
-          value: "False"
+        # - name: RESTART
+        #   value: "True"
         - name: LOG_LEVEL
           value: "INFO"
         - name: EVENTS_SOURCE_TOPIC
           value: "fire_event_source"
         - name: ADITIONAL_ALLOWED_EMPTY_FIELDS
-          value: "City,First_Unit_On_Scene,Estimated_Property_Loss,Estimated_Contents_Loss,Action_Taken_Secondary,Action_Taken_Other,Detector_Alerted_Occupants,Area_of_Fire_Origin,Ignition_Cause,Ignition_Factor_Primary,Ignition_Factor_Secondary,Heat_Source,Item_First_Ignited,Human_Factors_Associated_with_Ignition,Structure_Type,Structure_Status,Floor_of_Fire_Origin,Fire_Spread,Number_of_floors_with_minimum_damage,Number_of_floors_with_significant_damage,Number_of_floors_with_heavy_damage,Number_of_floors_with_extreme_damage,Detectors_Present,Detector_Type,Detector_Operation,Detector_Effectiveness,Detector_Failure_Reason,Automatic_Extinguishing_System_Present,Automatic_Extinguishing_System_Type,Automatic_Extinguishing_System_Perfomance,Automatic_Extinguishing_System_Failure_Reason,Number_of_Sprinkler_Heads_Operating,No_Flame_Spread"
+          value: "City,First_Unit_On_Scene,Estimated_Property_Loss,Estimated_Contents_Loss,Action_Taken_Secondary,Action_Taken_Other,Detector_Alerted_Occupants,Area_of_Fire_Origin,Ignition_Cause,Ignition_Factor_Primary,Ignition_Factor_Secondary,Heat_Source,Item_First_Ignited,Human_Factors_Associated_with_Ignition,Structure_Type,Structure_Status,Floor_of_Fire_Origin,Fire_Spread,Number_of_floors_with_minimum_damage,Number_of_floors_with_significant_damage,Number_of_floors_with_heavy_damage,Number_of_floors_with_extreme_damage,Detectors_Present,Detector_Type,Detector_Operation,Detector_Effectiveness,Detector_Failure_Reason,Automatic_Extinguishing_System_Present,Automatic_Extinguishing_System_Type,Automatic_Extinguishing_System_Perfomance,Automatic_Extinguishing_System_Failure_Reason,Number_of_Sprinkler_Heads_Operating,No_Flame_Spread,Box"
         
      
       restartPolicy: Always

@@ -45,7 +45,7 @@ metadata:
     app: fire-event-source
 spec:
   serviceName: "fire-event-source"
-  replicas: 1
+  replicas: 1 # Do not change
   selector:
     matchLabels:
       app: fire-event-source
@@ -90,7 +90,7 @@ spec:
         - name: DATETIME_FORMAT
           value: "%Y/%m/%d %H:%M:%S"
         - name: START_DATE
-          value: "2010/01/01" 
+          value: "2000/01/01" 
         - name: BATCH_SIZE
           value: "10000"
         - name: MAIN_LOOP
@@ -99,8 +99,8 @@ spec:
           value: "5"
         - name: KAFKA_BOOTSTRAP_SERVERS
           value: "fireplace-kafka-kafka-bootstrap:9092"
-        - name: RESTART
-          value: "False"
+        # - name: RESTART
+        #   value: "True"
         - name: LOG_LEVEL
           value: "INFO"
         - name: FIRE_EVENT_SOURCE_TOPIC
