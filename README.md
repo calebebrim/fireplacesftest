@@ -292,6 +292,33 @@ flowchart TD
 
 
 ```
+### Dependency
+```mermaid
+flowchart LR
+  subgraph Kubernetes
+    
+      F[Mounted File]
+      Redis[Redis-stack]
+      Kafka[Kafka-Strimzi]
+      R[Reports]
+      B[Bronze]
+      S[Silver]
+      G[Gold]
+        
+      
+      F --> B
+      B --> Redis
+      B --> Kafka
+      S --> Kafka
+      G --> Redis
+      G --> Kafka
+      R --> Redis
+    
+    
+  end
+  
+  
+```
 
 ### Data Pipeline
 
