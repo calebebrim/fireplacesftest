@@ -182,7 +182,7 @@ This project provides a reproducible local Kubernetes environment for analyzing 
 - **[src/](src/)** contains Python code for data ingestion, processing, and analytics.
     - Uses `redis`, `confluent-kafka`, and `pandas` (see [`requirements.txt`](requirements.txt)).
     - Organized into:
-        - `analysis/`: Data analysis scripts and notebooks.
+        - `analysis/`: Data analysis example scripts and query. 
         - `services/`: Microservices for data movement and transformation.
 
 ---
@@ -253,3 +253,63 @@ nodes:
 🎉 **That’s it!** You’re ready to spin up and tear down a full-featured local data platform using KinD, Tilt, and Kubernetes!
 
 If you have any questions or want to extend this setup, let me know! 🚀
+
+
+
+## 📊 Architecture Diagram
+
+### Infrastructure
+```mermaid
+flowchart TD
+  subgraph Local Machine
+    subgraph Docker Engine
+      subgraph KinD Cluster
+        subgraph Worker
+          Redis[Redis-stack]
+          A[Deploymets]
+        end
+        subgraph Worker1
+          Kafka[Kafka-Strimzi]
+          B[Deploymets]
+        end
+        
+        
+      
+      end    
+      Registry[Local Docker Registry]
+    end
+    
+  end
+  Docker[Docker Registry]
+  
+
+  Docker--> |pull| Redis
+  Docker--> |pull| Kafka
+
+  Registry --> |pull| A
+  Registry --> |pull| B
+
+
+
+```
+
+### Data Pipeline
+
+```mermaid
+flowchart LR
+  A[Fire Incidents CSV<br>mount/worker/firedata] --> B[Bronze: Fire Event Source Job<br> bronze-fireeventsource]
+  
+  c1[Redis: row control]
+  c2[Redis: file control]
+
+  B --> c1
+  B --> c2
+  B --> C[fire_event_source<br>Kafka Topic]
+  C --> D[Silver: Data Quality Job<br>silver-dataquality]
+  D -->|Cleaned Data| E1[validated-fire-events<br>Kafka Topic]
+  D -->|Cleaned Data| E2[validation-failed-fire-events<br>Kafka Topic]
+  E1 --> F[Gold: Serving Layer Job]
+  F -->|FireEvent| G[Redis:fireevent]
+
+  Report[Report:<br>simple_counting]-->|query|G
+```
