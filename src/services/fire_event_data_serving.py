@@ -137,7 +137,7 @@ def main():
             return processed_messages >= BATCH_SIZE or timeout
 
         try:
-            for msg in kafka_consumer_generator(kc):
+            for msg in kafka_consumer_generator(kc, checkInterruption=stop):
                 if stop():
                     break
                 key_str = msg.key().decode("utf-8")
