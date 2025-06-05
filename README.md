@@ -19,8 +19,8 @@ This project provides a reproducible local Kubernetes environment for analyzing 
 1. **Clone the repository**:
 
     ```bash
-    git clone https://github.com/calebebrim/fireplacesftest.git
-    cd fireplacesftest
+    git clone https://github.com/calebebrim/sf-fire-incidents-realtime-datapipeline.git
+    cd sf-fire-incidents-realtime-datapipeline
     ```
     After cloning, download and add the data file under `mount/worker/firedata`:
 
